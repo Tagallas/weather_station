@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "client_config_default.h": "c",
+        "client_subscriptions.h": "c",
+        "client_highlevel.h": "c",
+        "log_stdout.h": "c",
+        "server_config_default.h": "c"
+    }
+}

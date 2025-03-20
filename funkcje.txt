@@ -1,0 +1,60 @@
+typy danych:
+    UA_Int32, UA_Double, UA_Boolean, UA_String, UA_Int32[10], UA_Structures...
+
+UA_Server_writeValue(), UA_Client_writeValueAttribute() - edycja danych
+UA_Client_readValueAttribute()
+
+UA_NODEID_NUMERIC(0, UA_NS0ID_OBJECTSFOLDER) - odczytanie węzła root
+UA_Client_browse() - zapytanie o całą hierarchię węzłów
+UA_BrowseRequest() - filtrowanie danych, niektóre servery tylko
+
+ObjectsFolder - główny katalog w OPC UA
+
+https://www.open62541.org/doc/0.1/annotated.html
+
+typy węzłów:
+Object – grupuje inne węzły (np. "Factory", "Machines", "Machine1").
+Variable – przechowuje dane (np. "Temperature", "Speed", "Status").
+Method – funkcje, które można wywołać na serwerze.
+Reference – relacja między węzłami (np. "Organizes", "HasComponent").
+
+funkcje: 
+UA_Server_addVariableNode
+UA_Server_addObjectNode
+UA_Server_addMethodNode
+UA_Server_addDataTypeNode
+UA_Server_addViewNode
+UA_Server_addReference
+
+przykładowa struktura:
+ObjectsFolder (NodeId: 85)
+│
+├── Factory (Object, NodeId: 1001)
+│   │
+│   ├── Machines (Object, NodeId: 2001)
+│   │   ├── Machine1 (Object, NodeId: 2101)
+│   │   │   ├── Temperature (Variable, NodeId: 2102, Value: 75.4°C)
+│   │   │   ├── Speed (Variable, NodeId: 2103, Value: 1200 RPM)
+│   │   │   ├── Status (Variable, NodeId: 2104, Value: "Running")
+│   │   │
+│   │   ├── Machine2 (Object, NodeId: 2201)
+│   │       ├── Temperature (Variable, NodeId: 2202, Value: 82.1°C)
+│   │       ├── Speed (Variable, NodeId: 2203, Value: 900 RPM)
+│   │       ├── Status (Variable, NodeId: 2204, Value: "Stopped")
+│   │
+│   ├── Operators (Object, NodeId: 3001)
+│   │   ├── Operator1 (Object, NodeId: 3101)
+│   │   │   ├── Name (Variable, NodeId: 3102, Value: "John Doe")
+│   │   │   ├── Role (Variable, NodeId: 3103, Value: "Supervisor")
+│   │   │
+│   │   ├── Operator2 (Object, NodeId: 3201)
+│   │       ├── Name (Variable, NodeId: 3202, Value: "Alice Smith")
+│   │       ├── Role (Variable, NodeId: 3203, Value: "Technician")
+│   │
+│   ├── Alarms (Object, NodeId: 4001)
+│       ├── Alarm1 (Object, NodeId: 4101)
+│       │   ├── Type (Variable, NodeId: 4102, Value: "Overheat")
+│       │   ├── Severity (Variable, NodeId: 4103, Value: "High")
+│       │   ├── Timestamp (Variable, NodeId: 4104, Value: "2025-03-20 10:15:00")
+│
+└── SystemStatus (Variable, NodeId: 5001, Value: "Operational")

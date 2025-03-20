@@ -56,25 +56,31 @@ void* updateThread(void *arg) {
     return NULL;
 }
 
-static void serverRun() {
-    UA_Server *server = UA_Server_new();
-    UA_ServerConfig_setDefault(UA_Server_getConfig(server));
+// static void serverRun() {
+//     UA_Server *server = UA_Server_new();
+//     UA_ServerConfig_setDefault(UA_Server_getConfig(server));
 
-    addVariable(server);
+//     addVariable(server);
 
-    //while (true) {
-    //    updateVariable(server);
-    //    UA_Server_run_iterate(server, true);
-        //UA_sleep_ms(1000);  // Co sekundę aktualizuje zmienną
-	//sleep(1);
-    //}
-    UA_Server_runUntilInterrupt(server);
-    UA_Server_delete(server);
-}
+//     //while (true) {
+//     //    updateVariable(server);
+//     //    UA_Server_run_iterate(server, true);
+//         //UA_sleep_ms(1000);  // Co sekundę aktualizuje zmienną
+// 	//sleep(1);
+//     //}
+//     UA_Server_runUntilInterrupt(server);
+//     UA_Server_delete(server);
+// }
 
 int main(void) {
     UA_Server *server = UA_Server_new();
     UA_ServerConfig_setDefault(UA_Server_getConfig(server));
+
+    // zmiana adresu działania servera
+    // UA_ServerConfig *config = UA_Server_getConfig(server);
+    // config->networkLayersSize = 1;
+    // config->networkLayers = (UA_ServerNetworkLayer *)UA_malloc(sizeof(UA_ServerNetworkLayer));
+    // *config->networkLayers = UA_ServerNetworkLayerTCP(UA_ConnectionConfig_default, 4840, "opc.tcp://192.168.1.10:4840");
 
     addVariable(server);
     

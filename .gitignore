@@ -1,4 +1,5 @@
 build/
+open62541/
 
 # Prerequisites
 *.d
