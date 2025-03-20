@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <open62541/network_tcp.h>
 
 typedef struct {
     int intValue;
@@ -74,7 +75,16 @@ void* updateThread(void *arg) {
 
 int main(void) {
     UA_Server *server = UA_Server_new();
-    UA_ServerConfig_setDefault(UA_Server_getConfig(server));
+    // UA_ServerConfig_setDefault(UA_Server_getConfig(server));
+
+    UA_Server *server = UA_Server_new();
+    UA_ServerConfig *config = UA_Server_getConfig(server);
+    
+    UA_ServerConfig_clean(config);
+    
+    UA_ServerNetworkLayer nl = UA_ServerNetworkLayerTCP(UA_ConnectionConfig_default, "opc.tcp://80.49.48.31:4840");
+    config->networkLayers = &nl;
+    config->networkLayersSize = 1;
 
     // zmiana adresu działania servera
     // UA_ServerConfig *config = UA_Server_getConfig(server);
@@ -88,6 +98,7 @@ int main(void) {
     pthread_create(&thread, NULL, updateThread, (void *)server);
     printf("OPC UA Server started...\n");
     UA_Server_runUntilInterrupt(server);
+    UA_ServerNetworkLayer_deleteMembers(&nl);
     UA_Server_delete(server);
     return 0;
 }
