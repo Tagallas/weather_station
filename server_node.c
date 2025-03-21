@@ -38,38 +38,38 @@ static void updateVariable(UA_Server *server) {
 }
 
 
-static void addDataType(UA_Server *server) {
-    UA_DataTypeAttributes  dtAttr = UA_DataTypeAttributes_default;
-    dtAttr.displayName = UA_LOCALIZEDTEXT("en-US", "BasicData");
-
-    UA_NodeId dataTypeId = UA_NODEID_NUMERIC(1, 5002); // Unique NodeId
-    UA_Server_addDataTypeNode(server, dataTypeId,
-        UA_NODEID_NUMERIC(0, UA_NS0ID_STRUCTURE), // Parent type
-        UA_NODEID_NUMERIC(0, UA_NS0ID_HASSUBTYPE),
-        UA_QUALIFIEDNAME(1, "BasicData"),
-        dtAttr, NULL, NULL);
-
-    // Define structure members
-    UA_StructureDefinition sd;
-    UA_StructureDefinition_init(&sd);
-    sd.structureType = UA_STRUCTURETYPE_STRUCTURE;
-    sd.fieldsSize = 3;
-    sd.fields = (UA_StructureField*)UA_Array_new(3, &UA_TYPES[UA_TYPES_STRUCTUREFIELD]);
-
-    sd.fields[0].dataType = UA_TYPES[UA_TYPES_INT32].typeId;
-    sd.fields[0].name = UA_STRING_ALLOC("stationID");
-    sd.fields[0].isOptional = false;
-    sd.fields[1].dataType = UA_TYPES[UA_TYPES_DATETIME].typeId;
-    sd.fields[1].name = UA_STRING_ALLOC("time");
-    sd.fields[1].isOptional = false;
-    sd.fields[2].dataType = UA_TYPES[UA_TYPES_FLOAT].typeId;
-    sd.fields[2].name = UA_STRING_ALLOC("temperature");
-    sd.fields[2].isOptional = false;
-
-    // Attach definition to the custom data type
-    UA_NodeId structureDataType = UA_NODEID_NUMERIC(1, 5002);
-    UA_Server_addStructureDefinition(server, structureDataType, &sd);
-}
+//static void addDataType(UA_Server *server) {
+//    UA_DataTypeAttributes  dtAttr = UA_DataTypeAttributes_default;
+//    dtAttr.displayName = UA_LOCALIZEDTEXT("en-US", "BasicData");
+//
+//    UA_NodeId dataTypeId = UA_NODEID_NUMERIC(1, 5002); // Unique NodeId
+//    UA_Server_addDataTypeNode(server, dataTypeId,
+//        UA_NODEID_NUMERIC(0, UA_NS0ID_STRUCTURE), // Parent type
+//        UA_NODEID_NUMERIC(0, UA_NS0ID_HASSUBTYPE),
+//        UA_QUALIFIEDNAME(1, "BasicData"),
+//        dtAttr, NULL, NULL);
+//
+//    // Define structure members
+//    UA_StructureDefinition sd;
+//    UA_StructureDefinition_init(&sd);
+//    sd.structureType = UA_STRUCTURETYPE_STRUCTURE;
+//    sd.fieldsSize = 3;
+//    sd.fields = (UA_StructureField*)UA_Array_new(3, &UA_TYPES[UA_TYPES_STRUCTUREFIELD]);
+//
+//    sd.fields[0].dataType = UA_TYPES[UA_TYPES_INT32].typeId;
+//    sd.fields[0].name = UA_STRING_ALLOC("stationID");
+//    sd.fields[0].isOptional = false;
+//    sd.fields[1].dataType = UA_TYPES[UA_TYPES_DATETIME].typeId;
+//    sd.fields[1].name = UA_STRING_ALLOC("time");
+//    sd.fields[1].isOptional = false;
+//    sd.fields[2].dataType = UA_TYPES[UA_TYPES_FLOAT].typeId;
+//    sd.fields[2].name = UA_STRING_ALLOC("temperature");
+//    sd.fields[2].isOptional = false;
+//
+//    // Attach definition to the custom data type
+//    UA_NodeId structureDataType = UA_NODEID_NUMERIC(1, 5002);
+//    UA_Server_addStructureDefinition(server, structureDataType, &sd);
+//}
 
 
 static void addStruct(UA_Server *server) {
@@ -123,15 +123,33 @@ static void addVariable(UA_Server *server) {
 }
 
 
-static void addObject(UA_Server *server, UA_String *name, int nodeID, int parent_nodeID) {
+static void addObject(UA_Server *server, char* name, int nodeID, int parent_nodeID) {
     UA_NodeId myObject;
     UA_ObjectAttributes oAttr = UA_ObjectAttributes_default;
     oAttr.displayName = UA_LOCALIZEDTEXT("en-US", name);
 
+ // Check if the parent node exists before adding a child node
+    UA_Boolean parentExists = UA_FALSE;
+    UA_NodeId parentId = UA_NODEID_NUMERIC(0,  // Check if the parent node exists before adding a child node
+    UA_Boolean parentExists = UA_FALSE;
+    UA_NodeId parentId = UA_NODEID_NUMERIC(0, parent_nodeID);
+    UA_NodeClass parentClass;
+
+    // Browse to see if the parent exists
+    UA_StatusCode status = UA_Server_readNodeClass(server, parentId, &parentClass);
+    if(status == UA_STATUSCODE_GOOD) {
+        parentExists = UA_TRUE;
+    }
+
+    if (!parentExists) {
+        printf("Error: Parent node %d does not exist. Cannot add node %d (%s).\n", parent_nodeID, nodeID, name);
+        return;
+    }
+
     UA_Server_addObjectNode(server, 
         UA_NODEID_NUMERIC(1, nodeID),  // ID węzła
-        UA_NODEID_NUMERIC(0, parent_nodeID), // Rodzic (ObjectsFolder)
-        UA_NODEID_NUMERIC(0, UA_NS0ID_ORGANIZES), // Relacja z rodzicem
+        UA_NODEID_NUMERIC(1, parent_nodeID), // Rodzic (ObjectsFolder)
+        UA_NODEID_NUMERIC(0, UA_NS0ID_ORGANIZES), // Relacja z rodzicem
         UA_QUALIFIEDNAME(1, name), // Nazwa
         UA_NODEID_NUMERIC(0, UA_NS0ID_BASEOBJECTTYPE), // Typ (bazowy obiekt OPC UA)
         oAttr, NULL, &myObject);
@@ -168,7 +186,7 @@ int main(void) {
     addObject(server, "PSE", 4001, 1001);
     addObject(server, "DataTypes", 5001, 1001);
 
-    addDataType(server);
+    //addDataType(server);
 
     pthread_t thread;
     pthread_create(&thread, NULL, updateThread, (void *)server);
