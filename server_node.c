@@ -128,28 +128,10 @@ static void addObject(UA_Server *server, char* name, int nodeID, int parent_node
     UA_ObjectAttributes oAttr = UA_ObjectAttributes_default;
     oAttr.displayName = UA_LOCALIZEDTEXT("en-US", name);
 
- // Check if the parent node exists before adding a child node
-    UA_Boolean parentExists = UA_FALSE;
-    UA_NodeId parentId = UA_NODEID_NUMERIC(0,  // Check if the parent node exists before adding a child node
-    UA_Boolean parentExists = UA_FALSE;
-    UA_NodeId parentId = UA_NODEID_NUMERIC(0, parent_nodeID);
-    UA_NodeClass parentClass;
-
-    // Browse to see if the parent exists
-    UA_StatusCode status = UA_Server_readNodeClass(server, parentId, &parentClass);
-    if(status == UA_STATUSCODE_GOOD) {
-        parentExists = UA_TRUE;
-    }
-
-    if (!parentExists) {
-        printf("Error: Parent node %d does not exist. Cannot add node %d (%s).\n", parent_nodeID, nodeID, name);
-        return;
-    }
-
     UA_Server_addObjectNode(server, 
         UA_NODEID_NUMERIC(1, nodeID),  // ID węzła
         UA_NODEID_NUMERIC(1, parent_nodeID), // Rodzic (ObjectsFolder)
-        UA_NODEID_NUMERIC(0, UA_NS0ID_ORGANIZES), // Relacja z rodzicem
+        UA_NODEID_NUMERIC(0, UA_NS0ID_ORGANIZES), // Relacja z rodzicem
         UA_QUALIFIEDNAME(1, name), // Nazwa
         UA_NODEID_NUMERIC(0, UA_NS0ID_BASEOBJECTTYPE), // Typ (bazowy obiekt OPC UA)
         oAttr, NULL, &myObject);
@@ -181,10 +163,10 @@ int main(void) {
     config->applicationDescription.applicationName = UA_LOCALIZEDTEXT_ALLOC("en", "Example for Medium");
 
     addObject(server, "Stacja pogodowa", 1001, UA_NS0ID_OBJECTSFOLDER);
-    addObject(server, "Dane pogodowe", 2001, 1001);
-    addObject(server, "Stacja pogodowa", 3001, 1001);
-    addObject(server, "PSE", 4001, 1001);
-    addObject(server, "DataTypes", 5001, 1001);
+    // addObject(server, "Dane pogodowe", 2001, 1001);
+    // addObject(server, "Stacja pogodowa", 3001, 1001);
+    // addObject(server, "PSE", 4001, 1001);
+    // addObject(server, "DataTypes", 5001, 1001);
 
     //addDataType(server);
 
