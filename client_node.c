@@ -13,26 +13,62 @@
 
 
 // print all nodes found on server
-void browseNodes(UA_Client *client, UA_NodeId parentNode) {
+// void browseNodes(UA_Client *client, UA_NodeId parentNode) {
+//     UA_BrowseRequest bReq;
+//     UA_BrowseRequest_init(&bReq);
+//     bReq.requestedMaxReferencesPerNode = 0;
+//     bReq.nodesToBrowse = parentNode;
+//     bReq.nodesToBrowseSize = 1;
+//     UA_BrowseResponse bResp = UA_Client_Service_browse(client, bReq);
+//     for (size_t i = 0; i < bResp.resultsSize; i++) {
+//         for (size_t j = 0; j < bResp.results[i].referencesSize; j++) {
+//             UA_ReferenceDescription *ref = &(bResp.results[i].references[j]);
+//             printf("Found node: %.*s (NodeId: %u)\n",
+//                    (int)ref->browseName.name.length, ref->browseName.name.data,
+//                    ref->nodeId.nodeId.identifier.numeric);
+
+//             // Rekursywnie przeglądamy podwęzły
+//             browseNodes(client, ref->nodeId.nodeId);
+//         }
+//     }
+//     UA_BrowseResponse_clear(&bResp);
+// }
+
+
+void browseNode(UA_Client *client, UA_NodeId startNode) {
+    printf("Browsing nodes under NodeId %d\n", startNode.identifier.numeric);
+
+    // Create a Browse Request
     UA_BrowseRequest bReq;
     UA_BrowseRequest_init(&bReq);
-    bReq.requestedMaxReferencesPerNode = 0;
-    bReq.nodesToBrowse = parentNode;
+    bReq.requestedMaxReferencesPerNode = 0; // No limit on results
+    bReq.nodesToBrowse = UA_BrowseDescription_new();
     bReq.nodesToBrowseSize = 1;
+    
+    // Set the starting node (e.g., ObjectsFolder)
+    bReq.nodesToBrowse[0].nodeId = startNode;
+    bReq.nodesToBrowse[0].resultMask = UA_BROWSERESULTMASK_ALL; // Get all info (NodeId, BrowseName, DisplayName, etc.)
 
+    // Send browse request
     UA_BrowseResponse bResp = UA_Client_Service_browse(client, bReq);
-    for (size_t i = 0; i < bResp.resultsSize; i++) {
-        for (size_t j = 0; j < bResp.results[i].referencesSize; j++) {
-            UA_ReferenceDescription *ref = &(bResp.results[i].references[j]);
-            printf("Found node: %.*s (NodeId: %u)\n",
-                   (int)ref->browseName.name.length, ref->browseName.name.data,
-                   ref->nodeId.nodeId.identifier.numeric);
 
-            // Rekursywnie przeglądamy podwęzły
-            browseNodes(client, ref->nodeId.nodeId);
+    if (bResp.responseHeader.serviceResult == UA_STATUSCODE_GOOD) {
+        for (size_t i = 0; i < bResp.resultsSize; i++) {
+            for (size_t j = 0; j < bResp.results[i].referencesSize; j++) {
+                UA_ReferenceDescription *ref = &bResp.results[i].references[j];
+
+                printf("Found Node: %.*s (NodeId: %d)\n",
+                       (int)ref->browseName.name.length, ref->browseName.name.data,
+                       ref->nodeId.nodeId.identifier.numeric);
+            }
         }
+    } else {
+        printf("Browse failed with status code: %x\n", bResp.responseHeader.serviceResult);
     }
+
+    // Cleanup
     UA_BrowseResponse_clear(&bResp);
+    UA_BrowseRequest_clear(&bReq);
 }
 
 
@@ -64,6 +100,7 @@ void add_node(UA_Server *server){
                             UA_QUALIFIEDNAME(1, "MyVariable"),
                             variableType, attr, NULL, &newNodeId);
 }
+
 
 // zmiana wartości, subscribe na danym nodzie
 static void dataChangeCallback(UA_Client *client, UA_UInt32 subId, void *subContext,
@@ -97,6 +134,7 @@ static void handler_DataChange(UA_Client *client, UA_UInt32 subId, void *subCont
 //     UA_Client_run_iterate(client, 1000); - odpytuje co 1s server czy zmiana wartości
 // }
 // UA_Client_runAsync(client, 1000); - odpytuje co 1s i działa w tle
+
 
 static void clientRun() {
     UA_Client *client = UA_Client_new();

@@ -26,6 +26,20 @@ UA_Server_addDataTypeNode
 UA_Server_addViewNode
 UA_Server_addReference
 
+ObjectsFolder (NodeId: 85)
+│
+├── Stacja pogodowa (Object, NodeId: 1001)
+│   │
+│   ├── Dane pogodowe (Object, NodeId: 2001)
+│   │
+│   ├── Dane przetworzone (Object, NodeId: 3001)
+│   │
+│   ├── PSE (Object, NodeId: 4001)
+│   │
+│   ├── DataTypes (Object, NodeId: 5001)
+│   │   ├── BasicData (DataType, NodeId: 5002)
+
+
 przykładowa struktura:
 ObjectsFolder (NodeId: 85)
 │
