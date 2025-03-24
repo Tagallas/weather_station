@@ -12,29 +12,6 @@
 #include <pthread.h>
 
 
-// print all nodes found on server
-// void browseNodes(UA_Client *client, UA_NodeId parentNode) {
-//     UA_BrowseRequest bReq;
-//     UA_BrowseRequest_init(&bReq);
-//     bReq.requestedMaxReferencesPerNode = 0;
-//     bReq.nodesToBrowse = parentNode;
-//     bReq.nodesToBrowseSize = 1;
-//     UA_BrowseResponse bResp = UA_Client_Service_browse(client, bReq);
-//     for (size_t i = 0; i < bResp.resultsSize; i++) {
-//         for (size_t j = 0; j < bResp.results[i].referencesSize; j++) {
-//             UA_ReferenceDescription *ref = &(bResp.results[i].references[j]);
-//             printf("Found node: %.*s (NodeId: %u)\n",
-//                    (int)ref->browseName.name.length, ref->browseName.name.data,
-//                    ref->nodeId.nodeId.identifier.numeric);
-
-//             // Rekursywnie przeglądamy podwęzły
-//             browseNodes(client, ref->nodeId.nodeId);
-//         }
-//     }
-//     UA_BrowseResponse_clear(&bResp);
-// }
-
-
 void browseNode(UA_Client *client, UA_NodeId startNode) {
     printf("Browsing nodes under NodeId %d\n", startNode.identifier.numeric);
 
@@ -84,24 +61,6 @@ void read_value(UA_Client *client){
 }
 
 
-// add node
-void add_node(UA_Server *server){
-    UA_NodeId newNodeId; // NodeId zostanie automatycznie przypisany
-    UA_VariableAttributes attr = UA_VariableAttributes_default; // ustawienie domyślnych wartości węzła
-    UA_Int32 myValue = 42; 
-    UA_Variant_setScalar(&attr.value, &myValue, &UA_TYPES[UA_TYPES_INT32]);
-    attr.description = UA_LOCALIZEDTEXT("en-US", "MyVariable");
-    attr.displayName = UA_LOCALIZEDTEXT("en-US", "MyVariable");
-
-    UA_NodeId parentNodeId = UA_NODEID_NUMERIC(0, UA_NS0ID_OBJECTSFOLDER); // węzeł nadrzędny (w tym wypadku node główny)
-    UA_NodeId variableType = UA_NODEID_NUMERIC(0, UA_NS0ID_BASEDATAVARIABLETYPE); // typ węzła
-    UA_Server_addVariableNode(server, UA_NODEID_NULL, parentNodeId,     
-                            UA_NODEID_NUMERIC(0, UA_NS0ID_ORGANIZES), // są inne raczej tego używać
-                            UA_QUALIFIEDNAME(1, "MyVariable"),
-                            variableType, attr, NULL, &newNodeId);
-}
-
-
 // zmiana wartości, subscribe na danym nodzie
 static void dataChangeCallback(UA_Client *client, UA_UInt32 subId, void *subContext,
                                UA_UInt32 monId, void *monContext, UA_DataValue *value) {
@@ -140,27 +99,34 @@ static void clientRun() {
     UA_Client *client = UA_Client_new();
     UA_ClientConfig_setDefault(UA_Client_getConfig(client));
 
-    UA_StatusCode status = UA_Client_connect(client, "opc.tcp://localhost:4840");
+    UA_StatusCode status = UA_Client_connect(client, "opc.tcp://192.168.192.185:4845");
     if (status != UA_STATUSCODE_GOOD) {
         UA_Client_delete(client);
         printf("Failed to connect to server\n");
         return;
     }
 
-    UA_NodeId nodeId = UA_NODEID_STRING(1, "customVariable");
-    UA_CreateSubscriptionRequest request = UA_CreateSubscriptionRequest_default();
-    UA_CreateSubscriptionResponse response = UA_Client_Subscriptions_create(client, request, NULL, NULL, NULL);
+    /// subscription
+    // UA_NodeId nodeId = UA_NODEID_STRING(1, "customVariable");
+    // UA_CreateSubscriptionRequest request = UA_CreateSubscriptionRequest_default();
+    // UA_CreateSubscriptionResponse response = UA_Client_Subscriptions_create(client, request, NULL, NULL, NULL);
 
-    if (response.responseHeader.serviceResult == UA_STATUSCODE_GOOD) {
-        UA_MonitoredItemCreateRequest monRequest =
-            UA_MonitoredItemCreateRequest_default(nodeId);
-        UA_Client_MonitoredItems_createDataChange(client, response.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH,
-                                                  monRequest, NULL, dataChangeCallback, NULL);
-    }
+    // if (response.responseHeader.serviceResult == UA_STATUSCODE_GOOD) {
+    //     UA_MonitoredItemCreateRequest monRequest =
+    //         UA_MonitoredItemCreateRequest_default(nodeId);
+    //     UA_Client_MonitoredItems_createDataChange(client, response.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH,
+    //                                               monRequest, NULL, dataChangeCallback, NULL);
+    // }
+
+    // while (true) {
+    //     UA_Client_run_iterate(client, 1000);
+    // }
+
 
     while (true) {
-        UA_Client_run_iterate(client, 1000);
-    }
+        browseNode(client, UA_NODEID_NUMERIC(1, 2001));
+        sleep(10000);
+    }    
 
     UA_Client_delete(client);
 }

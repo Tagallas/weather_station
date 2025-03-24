@@ -9,7 +9,7 @@
 
 typedef struct {
     int stationID;
-    UA_DateTimeStruct time;
+    UA_String time;
     float temperature;
 } BasicData;
 
@@ -38,72 +38,6 @@ static void updateVariable(UA_Server *server) {
 }
 
 
-//static void addDataType(UA_Server *server) {
-//    UA_DataTypeAttributes  dtAttr = UA_DataTypeAttributes_default;
-//    dtAttr.displayName = UA_LOCALIZEDTEXT("en-US", "BasicData");
-//
-//    UA_NodeId dataTypeId = UA_NODEID_NUMERIC(1, 5002); // Unique NodeId
-//    UA_Server_addDataTypeNode(server, dataTypeId,
-//        UA_NODEID_NUMERIC(0, UA_NS0ID_STRUCTURE), // Parent type
-//        UA_NODEID_NUMERIC(0, UA_NS0ID_HASSUBTYPE),
-//        UA_QUALIFIEDNAME(1, "BasicData"),
-//        dtAttr, NULL, NULL);
-//
-//    // Define structure members
-//    UA_StructureDefinition sd;
-//    UA_StructureDefinition_init(&sd);
-//    sd.structureType = UA_STRUCTURETYPE_STRUCTURE;
-//    sd.fieldsSize = 3;
-//    sd.fields = (UA_StructureField*)UA_Array_new(3, &UA_TYPES[UA_TYPES_STRUCTUREFIELD]);
-//
-//    sd.fields[0].dataType = UA_TYPES[UA_TYPES_INT32].typeId;
-//    sd.fields[0].name = UA_STRING_ALLOC("stationID");
-//    sd.fields[0].isOptional = false;
-//    sd.fields[1].dataType = UA_TYPES[UA_TYPES_DATETIME].typeId;
-//    sd.fields[1].name = UA_STRING_ALLOC("time");
-//    sd.fields[1].isOptional = false;
-//    sd.fields[2].dataType = UA_TYPES[UA_TYPES_FLOAT].typeId;
-//    sd.fields[2].name = UA_STRING_ALLOC("temperature");
-//    sd.fields[2].isOptional = false;
-//
-//    // Attach definition to the custom data type
-//    UA_NodeId structureDataType = UA_NODEID_NUMERIC(1, 5002);
-//    UA_Server_addStructureDefinition(server, structureDataType, &sd);
-//}
-
-
-static void addStruct(UA_Server *server) {
-    UA_VariableAttributes vAttr = UA_VariableAttributes_default;
-    vAttr.displayName = UA_LOCALIZEDTEXT("en-US", "Dane pogodowe");
-
-    // Create a sample value
-    UA_DateTimeStruct time;
-    time.year = 2025;
-    time.month = 1;
-    time.day = 1;
-    time.hour = 12;
-    time.min = 0;
-    BasicData data;
-    data.stationID = 1;
-    data.time = time;
-    data.temperature = 20.1;
-
-    // Convert struct to UA_Variant
-    UA_Variant value;
-    UA_Variant_setScalar(&value, &data, &UA_TYPES[UA_TYPES_STRUCTUREFIELD]);
-    vAttr.value = value;
-
-    // Add variable node
-    UA_NodeId variableNodeId = UA_NODEID_NUMERIC(1, 7001);
-    UA_Server_addVariableNode(server, variableNodeId,
-        UA_NODEID_NUMERIC(0, 2001),
-        UA_NODEID_NUMERIC(0, UA_NS0ID_HASCOMPONENT),
-        UA_QUALIFIEDNAME(1, "MachineData"),
-        UA_NODEID_NUMERIC(1, 5002), // Reference the custom structure
-        vAttr, NULL, NULL);
-}
-
-
 static void addVariable(UA_Server *server) {
     UA_VariableAttributes attr = UA_VariableAttributes_default;
     attr.displayName = UA_LOCALIZEDTEXT("en-US", "Dane pogodowe");
@@ -123,18 +57,63 @@ static void addVariable(UA_Server *server) {
 }
 
 
-static void addObject(UA_Server *server, char* name, int nodeID, int parent_nodeID) {
+static void addObject(UA_Server *server, char* name, int nodeID, UA_NodeId parent_nodeID) {
     UA_NodeId myObject;
     UA_ObjectAttributes oAttr = UA_ObjectAttributes_default;
     oAttr.displayName = UA_LOCALIZEDTEXT("en-US", name);
 
     UA_Server_addObjectNode(server, 
         UA_NODEID_NUMERIC(1, nodeID),  // ID węzła
-        UA_NODEID_NUMERIC(1, parent_nodeID), // Rodzic (ObjectsFolder)
+        parent_nodeID, // Rodzic (ObjectsFolder)
         UA_NODEID_NUMERIC(0, UA_NS0ID_ORGANIZES), // Relacja z rodzicem
         UA_QUALIFIEDNAME(1, name), // Nazwa
         UA_NODEID_NUMERIC(0, UA_NS0ID_BASEOBJECTTYPE), // Typ (bazowy obiekt OPC UA)
         oAttr, NULL, &myObject);
+}
+
+
+static void addStringNode(UA_Server *server, char* name, int nodeID, int parent_nodeID){
+    UA_VariableAttributes attr = UA_VariableAttributes_default;
+    attr.displayName = UA_LOCALIZEDTEXT("en-US", name);
+    // attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE; 
+
+    UA_String initialString = UA_STRING("01/01/2000 00:00");
+    UA_Variant_setScalar(&attr.value, &initialString, &UA_TYPES[UA_TYPES_STRING]);
+
+    UA_NodeId nodeId = UA_NODEID_NUMERIC(1, nodeID); // ID zmiennej
+    UA_NodeId parentNodeId = UA_NODEID_NUMERIC(1, parent_nodeID); // ID rodzica
+    UA_Server_addVariableNode(server, nodeId, parentNodeId, 
+        UA_NODEID_NUMERIC(0, UA_NS0ID_HASCOMPONENT), // relacja 
+        UA_QUALIFIEDNAME(1, name),
+        UA_NODEID_NUMERIC(0, UA_NS0ID_BASEDATAVARIABLETYPE), // typ zmiennej 
+        attr, NULL, NULL);
+}
+
+
+static void addFloatArrayNode(UA_Server *server, char* name, int nodeID, int parent_nodeID) {
+    // Tworzymy tablicę 73 elementów typu float
+    float values[73] = {0}; // Inicjalizacja zerami
+
+    // Ustawienia atrybutów
+    UA_VariableAttributes attr = UA_VariableAttributes_default;
+    attr.displayName = UA_LOCALIZEDTEXT("en-US", name);
+    attr.dataType = UA_TYPES[UA_TYPES_FLOAT].typeId; // Typ float
+    attr.valueRank = 1; // Tablica jednowymiarowa
+    attr.arrayDimensionsSize = 1;
+    UA_UInt32 arrayDims = 73;
+    attr.arrayDimensions = &arrayDims;
+
+    // Przypisanie wartości do node'a
+    UA_Variant_setArrayCopy(&attr.value, values, 73, &UA_TYPES[UA_TYPES_FLOAT]);
+
+    // Dodanie węzła
+    UA_Server_addVariableNode(server,
+        UA_NODEID_NUMERIC(1, nodeID),
+        UA_NODEID_NUMERIC(1, parent_nodeID),
+        UA_NODEID_NUMERIC(0, UA_NS0ID_HASCOMPONENT),
+        UA_QUALIFIEDNAME(1, name),
+        UA_NODEID_NUMERIC(0, UA_NS0ID_BASEDATAVARIABLETYPE),
+        attr, NULL, NULL);
 }
 
 
@@ -162,13 +141,14 @@ int main(void) {
     config->serverUrlsSize = customServerUrlsSize;
     config->applicationDescription.applicationName = UA_LOCALIZEDTEXT_ALLOC("en", "Example for Medium");
 
-    addObject(server, "Stacja pogodowa", 1001, UA_NS0ID_OBJECTSFOLDER);
-    // addObject(server, "Dane pogodowe", 2001, 1001);
-    // addObject(server, "Stacja pogodowa", 3001, 1001);
-    // addObject(server, "PSE", 4001, 1001);
-    // addObject(server, "DataTypes", 5001, 1001);
+    addObject(server, "Stacja pogodowa", 1001, UA_NS0ID(OBJECTSFOLDER));
+    addObject(server, "Dane pogodowe", 2001, UA_NODEID_NUMERIC(1, 1001));
+    addStringNode(server, "Data", 2101, 2001);
+    addFloatArrayNode(server, "Temperatury", 2201, 2001);
+    addObject(server, "Stacja pogodowa", 3001, UA_NODEID_NUMERIC(1, 1001));
+    addObject(server, "PSE", 4001, UA_NODEID_NUMERIC(1, 1001));
 
-    //addDataType(server);
+    // addDataType(server);
 
     pthread_t thread;
     pthread_create(&thread, NULL, updateThread, (void *)server);
@@ -177,3 +157,78 @@ int main(void) {
     UA_Server_delete(server);
     return 0;
 }
+
+
+// static void addDataType(UA_Server *server) {
+//     UA_DataTypeAttributes dtAttr = UA_DataTypeAttributes_default;
+//     dtAttr.displayName = UA_LOCALIZEDTEXT("en-US", "BasicData");
+//     dtAttr.description = UA_LOCALIZEDTEXT("en-US", "Structure for weather station data");
+
+//     UA_NodeId dataTypeNodeId = UA_NODEID_NUMERIC(1, 5002);
+
+//     UA_Server_addDataTypeNode(server, dataTypeNodeId, UA_DataTypeAttributes
+//         UA_NODEID_NUMERIC(0, UA_NS0ID(STRUCTUREDTYPE)),
+//         UA_NODEID_NUMERIC(0, UA_NS0ID_HASSUBTYPE),
+//         UA_QUALIFIEDNAME(1, "BasicData"),
+//         dtAttr, NULL, NULL);
+
+//     // Definiujemy pola w strukturze
+//     UA_StructureField fields[3];
+
+//     // Pole: stationID (int)
+//     UA_StructureField_init(&fields[0]);
+//     fields[0].dataType = UA_TYPES[UA_TYPES_INT32].typeId;
+//     fields[0].name = UA_STRING("stationID");
+
+//     // Pole: time (UA_DateTime)
+//     UA_StructureField_init(&fields[1]);
+//     fields[1].dataType = UA_TYPES[UA_TYPES_DATETIME].typeId;
+//     fields[1].name = UA_STRING("time");
+
+//     // Pole: temperature (float)
+//     UA_StructureField_init(&fields[2]);
+//     fields[2].dataType = UA_TYPES[UA_TYPES_FLOAT].typeId;
+//     fields[2].name = UA_STRING("temperature");
+
+//     // Tworzymy opis struktury
+//     UA_StructureDefinition structure;
+//     UA_StructureDefinition_init(&structure);
+//     structure.structureType = UA_STRUCTURETYPE_STRUCTURE;
+//     structure.fieldsSize = 3;
+//     structure.fields = fields;
+
+//     // Przypisujemy definicję do DataType Node
+//     UA_Server_setDataTypeDefinition(server, dataTypeNodeId, structure);
+// }
+
+
+// static void addStruct(UA_Server *server) {
+//     UA_VariableAttributes vAttr = UA_VariableAttributes_default;
+//     vAttr.displayName = UA_LOCALIZEDTEXT("en-US", "Dane pogodowe");
+
+//     // Create a sample value
+//     UA_DateTimeStruct time;
+//     time.year = 2025;
+//     time.month = 1;
+//     time.day = 1;
+//     time.hour = 12;
+//     time.min = 0;
+//     BasicData data;
+//     data.stationID = 1;
+//     data.time = time;
+//     data.temperature = 20.1;
+
+//     // Convert struct to UA_Variant
+//     UA_Variant value;
+//     UA_Variant_setScalar(&value, &data, &UA_TYPES[UA_TYPES_STRUCTUREFIELD]);
+//     vAttr.value = value;
+
+//     // Add variable node
+//     UA_NodeId variableNodeId = UA_NODEID_NUMERIC(1, 7001);
+//     UA_Server_addVariableNode(server, variableNodeId,
+//         UA_NODEID_NUMERIC(0, 2001),
+//         UA_NODEID_NUMERIC(0, UA_NS0ID_HASCOMPONENT),
+//         UA_QUALIFIEDNAME(1, "MachineData"),
+//         UA_NODEID_NUMERIC(1, 5002), // Reference the custom structure
+//         vAttr, NULL, NULL);
+// }
