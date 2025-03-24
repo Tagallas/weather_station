@@ -33,8 +33,25 @@ static void updateVariable(UA_Server *server) {
     UA_Variant_setScalar(&value, &uaString, &UA_TYPES[UA_TYPES_STRING]);
 
     // Aktualizacja wartości węzła
-    UA_NodeId nodeId = UA_NODEID_STRING(1, "customVariable");
+    UA_NodeId nodeId = UA_NODEID_NUMERIC(1, 2101);
     UA_Server_writeValue(server, nodeId, value);
+
+
+    // // update temp
+    // float values[73] = {0};
+    // for (int i = 0; i<73; i++){
+    //     values[i] = i;
+    // }
+
+    // // Tworzenie wariantu OPC UA
+    // UA_Variant valuee;
+    // UA_Variant_init(&valuee);
+    // UA_Variant_setArray(&valuee, values, 73, &UA_TYPES[UA_TYPES_FLOAT]);
+
+    // // Aktualizacja wartości węzła
+    // nodeId = UA_NODEID_NUMERIC(1, 2201);
+    // UA_Server_writeValue(server, nodeId, value);
+
 }
 
 
@@ -93,6 +110,9 @@ static void addStringNode(UA_Server *server, char* name, int nodeID, int parent_
 static void addFloatArrayNode(UA_Server *server, char* name, int nodeID, int parent_nodeID) {
     // Tworzymy tablicę 73 elementów typu float
     float values[73] = {0}; // Inicjalizacja zerami
+    for (int i = 0; i<73; i++){
+        values[i] = i;
+    }
 
     // Ustawienia atrybutów
     UA_VariableAttributes attr = UA_VariableAttributes_default;
@@ -122,8 +142,8 @@ void* updateThread(void *arg) {
 
     while (1) {
         // Co sekundę aktualizujemy zmienną
-        // updateVariable(server);
-        sleep(1);  // Pauza na 1 sekundę
+        updateVariable(server);
+        sleep(10);  // Pauza na 1 sekundę
     }
     return NULL;
 }

@@ -71,9 +71,21 @@ static void dataChangeCallback(UA_Client *client, UA_UInt32 subId, void *subCont
 }
 static void handler_DataChange(UA_Client *client, UA_UInt32 subId, void *subContext,
     UA_UInt32 monId, void *monContext, UA_DataValue *value) {
+
     if (value->hasValue) {
-    UA_Int32 val = *(UA_Int32 *)value->value.data;
-    printf("Zmieniono wartość! Nowa wartość: %d\n", val);
+        size_t arrayLength = value->value.arrayLength;
+        if (arrayLength == 73 && value->value.type == &UA_TYPES[UA_TYPES_FLOAT]) {
+            float *arr = (float *)value->value.data;
+            printf("Received update (73-element float array):\n");
+            for (size_t i = 0; i < arrayLength; i++) {
+                printf("[%zu] = %f\n", i, arr[i]);
+            }
+            printf("\n");
+        } else {
+            printf("Received update, but data is not a 73-element float array\n");
+        }
+    } else {
+        printf("No valid data received\n");
     }
 }
 // w main:
@@ -107,24 +119,24 @@ static void clientRun() {
     }
 
     /// subscription
-    // UA_NodeId nodeId = UA_NODEID_STRING(1, "customVariable");
-    // UA_CreateSubscriptionRequest request = UA_CreateSubscriptionRequest_default();
-    // UA_CreateSubscriptionResponse response = UA_Client_Subscriptions_create(client, request, NULL, NULL, NULL);
+    UA_NodeId nodeId = UA_NODEID_NUMERIC(1, 2201);
+    UA_CreateSubscriptionRequest request = UA_CreateSubscriptionRequest_default();
+    UA_CreateSubscriptionResponse response = UA_Client_Subscriptions_create(client, request, NULL, NULL, NULL);
 
-    // if (response.responseHeader.serviceResult == UA_STATUSCODE_GOOD) {
-    //     UA_MonitoredItemCreateRequest monRequest =
-    //         UA_MonitoredItemCreateRequest_default(nodeId);
-    //     UA_Client_MonitoredItems_createDataChange(client, response.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH,
-    //                                               monRequest, NULL, dataChangeCallback, NULL);
-    // }
+    if (response.responseHeader.serviceResult == UA_STATUSCODE_GOOD) {
+        UA_MonitoredItemCreateRequest monRequest =
+            UA_MonitoredItemCreateRequest_default(nodeId);
+        UA_Client_MonitoredItems_createDataChange(client, response.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH,
+                                                  monRequest, NULL, handler_DataChange, NULL);
+    }
 
-    // while (true) {
-    //     UA_Client_run_iterate(client, 1000);
-    // }
+    while (true) {
+        UA_Client_run_iterate(client, 1000);
+    }
 
 
     while (true) {
-        browseNode(client, UA_NODEID_NUMERIC(1, 2001));
+        // browseNode(client, UA_NODEID_NUMERIC(1, 2001));
         sleep(10000);
     }    
 
