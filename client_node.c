@@ -6,10 +6,12 @@
 static void dataChangeCallback(UA_Client *client, UA_UInt32 subId, void *subContext,
     UA_UInt32 monId, void *monContext, UA_DataValue *value) {
     if (UA_Variant_hasScalarType(&value->value, &UA_TYPES[UA_TYPES_STRING])) {
-        pthread_mutex_unlock(&lock[0]);
-
         UA_String *str = (UA_String *)value->value.data;
         printf("Received update: %.*s\n", (int)str->length, str->data);
+        // TODO: odbierz dane
+        pthread_mutex_unlock(&lock[0]);
+
+        sleep(60);
         pthread_mutex_lock(&lock[0]);
     }
 }
@@ -38,22 +40,23 @@ static void clientRun() {
                                                   monRequest, NULL, dataChangeCallback, NULL);
     }
 
+    float tab[73] = {0};
+
     while (true) {
         UA_Client_run_iterate(client, 1000);
+        // read_valueString(client);
+        // read_valueArray(client);
+        // writeStringToNode(client, UA_NODEID_NUMERIC(1, 2101), "jeden");
+        // writeArrayToNode(client, UA_NODEID_NUMERIC(1, 2201), tab, 73);
+        sleep(5);
     }
-
-    // run
-    while (true) {
-        // browseNode(client, UA_NODEID_NUMERIC(1, 2001));
-        sleep(10000);
-    }    
 
     UA_Client_delete(client);
 }
 
 
-int main(void) {
-    printf("OPC UA Client started...\n");
-    clientRun();
-    return 0;
-}
+// int main(void) {
+//     printf("OPC UA Client started...\n");
+//     clientRun();
+//     return 0;
+// }

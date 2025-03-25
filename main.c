@@ -21,21 +21,30 @@ void* calcThread(void *arg) {
     while (1) {
         pthread_mutex_lock(&lock[0]);
         pthread_mutex_lock(&lock[1]);
-        calc_mean();
-        printf("test\n");
+        // calc_mean();
+        printf("calcThread\n");
         pthread_mutex_unlock(&lock[1]);
         pthread_mutex_unlock(&lock[0]);
+        sleep(1);
     }
     return NULL;
 }
 
 void* clientThread(void *arg){
-    printf("OPC UA Client started...\n");
-    clientRun();
+    // printf("OPC UA Client started...\n");
+    // clientRun();
 }
 
 void* sendThread(void *arg){
-    
+    while (1) {
+        pthread_mutex_lock(&lock[1]);
+        // TODO: send data
+        printf("sendThread\n");
+        sleep(1);
+        pthread_mutex_unlock(&lock[1]);
+        sleep(1);
+    }
+    return NULL;
 }
 
 int main(){
@@ -45,4 +54,6 @@ int main(){
     pthread_create(&(tid[0]) ,NULL, calcThread, NULL);
     pthread_create(&(tid[1]) ,NULL, clientThread, NULL);
     pthread_create(&(tid[2]) ,NULL, sendThread, NULL);
+
+    while (1) {}
 }

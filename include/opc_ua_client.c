@@ -49,17 +49,36 @@ void browseNode(UA_Client *client, UA_NodeId startNode) {
 }
 
 
-// read node value - TODO: test
-void read_value(UA_Client *client){
+// read string node value 
+void read_valueString(UA_Client *client){
     UA_Variant value;
     UA_Variant_init(&value);
-    UA_StatusCode status = UA_Client_readValueAttribute(client, UA_NODEID_NUMERIC(1, 1002), &value);
-    if (status == UA_STATUSCODE_GOOD && UA_Variant_hasScalarType(&value, &UA_TYPES[UA_TYPES_INT32])) {
-        printf("Value: %d\n", *(UA_Int32*)value.data);
+    UA_StatusCode status = UA_Client_readValueAttribute(client, UA_NODEID_NUMERIC(1, 2101), &value);
+    if (status == UA_STATUSCODE_GOOD && UA_Variant_hasScalarType(&value, &UA_TYPES[UA_TYPES_STRING])) {
+        printf("Value: %*s\n", *(UA_String*)value.data);
     }
     UA_Variant_clear(&value);
 }
 
+
+//read float[] node value
+void read_valueArray(UA_Client *client){
+    UA_Variant value;
+    UA_Variant_init(&value);
+    UA_StatusCode status = UA_Client_readValueAttribute(client, UA_NODEID_NUMERIC(1, 2201), &value);
+    if (status == UA_STATUSCODE_GOOD) {
+        float *arr = (float *)value.data;
+            printf("(73-element float array):\n");
+            for (size_t i = 0; i < 73; i++) {
+                printf("[%zu] = %f\n", i, arr[i]);
+            }
+            printf("\n");
+    }
+    else {
+        printf("Couldn't read array value\n");
+    }
+    UA_Variant_clear(&value);
+}
 
 
 // receive update from float[] node
@@ -99,7 +118,7 @@ void writeArrayToNode(UA_Client *client, UA_NodeId nodeId, float *data, size_t s
     UA_StatusCode status = UA_Client_writeValueAttribute(client, nodeId, &value);
 
     if (status == UA_STATUSCODE_GOOD) {
-        printf("Tablica float[73] zapisana do węzła!\n");
+        // printf("Tablica float[73] zapisana do węzła!\n");
     } else {
         printf("Błąd zapisu tablicy: %s\n", UA_StatusCode_name(status));
     }
@@ -119,7 +138,7 @@ void writeStringToNode(UA_Client *client, UA_NodeId nodeId, const char *text) {
     UA_StatusCode status = UA_Client_writeValueAttribute(client, nodeId, &value);
 
     if (status == UA_STATUSCODE_GOOD) {
-        printf("String zapisany do węzła!\n");
+        // printf("String zapisany do węzła!\n");
     } else {
         printf("Błąd zapisu stringa: %s\n", UA_StatusCode_name(status));
     }

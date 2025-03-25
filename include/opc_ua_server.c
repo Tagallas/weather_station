@@ -54,7 +54,7 @@ static void updateVariable(UA_Server *server) {
 static void addVariable(UA_Server *server) {
     UA_VariableAttributes attr = UA_VariableAttributes_default;
     attr.displayName = UA_LOCALIZEDTEXT("en-US", "Dane pogodowe");
-    // attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE; 
+    attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE; 
 
     UA_String initialString = UA_STRING("Initial Value");
     UA_Variant_setScalar(&attr.value, &initialString, &UA_TYPES[UA_TYPES_STRING]);
@@ -90,7 +90,7 @@ static void addObject(UA_Server *server, char* name, int nodeID, UA_NodeId paren
 static void addStringNode(UA_Server *server, char* name, int nodeID, int parent_nodeID){
     UA_VariableAttributes attr = UA_VariableAttributes_default;
     attr.displayName = UA_LOCALIZEDTEXT("en-US", name);
-    // attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE; 
+    attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE; 
 
     UA_String initialString = UA_STRING("01/01/2000 00:00");
     UA_Variant_setScalar(&attr.value, &initialString, &UA_TYPES[UA_TYPES_STRING]);
@@ -117,10 +117,13 @@ static void addFloatArrayNode(UA_Server *server, char* name, int nodeID, int par
     UA_VariableAttributes attr = UA_VariableAttributes_default;
     attr.displayName = UA_LOCALIZEDTEXT("en-US", name);
     attr.dataType = UA_TYPES[UA_TYPES_FLOAT].typeId; // Typ float
+    attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE; 
+
     attr.valueRank = 1; // Tablica jednowymiarowa
     attr.arrayDimensionsSize = 1;
     UA_UInt32 arrayDims = 73;
     attr.arrayDimensions = &arrayDims;
+    // attr.arrayDimensions = (UA_UInt32 *)UA_Array_new(9, &UA_TYPES[UA_TYPES_FLOAT]);
     // attr.arrayDimensionsSize = 2; // TODO - check
     // attr.arrayDimensions[0] = 3;
     // attr.arrayDimensions[1] = 3; // then array size = row x col
