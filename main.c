@@ -1,4 +1,4 @@
-#include "client_node.c"
+#include "include/client_node.c"
 
 
 pthread_t tid[3];
@@ -17,7 +17,7 @@ void* calc_mean(){
 }
 
 
-void* calcThread(void *arg) {
+void* calc_thread(void *arg) {
     while (1) {
         pthread_mutex_lock(&lock[0]);
         pthread_mutex_lock(&lock[1]);
@@ -30,12 +30,12 @@ void* calcThread(void *arg) {
     return NULL;
 }
 
-void* clientThread(void *arg){
+void* client_thread(void *arg){
     // printf("OPC UA Client started...\n");
     // clientRun();
 }
 
-void* sendThread(void *arg){
+void* send_thread(void *arg){
     while (1) {
         pthread_mutex_lock(&lock[1]);
         // TODO: send data
@@ -51,9 +51,9 @@ int main(){
     int pthread_mutex_init(pthread_mutex_t *restrict mutex,
         const pthread_mutexattr_t *restrict attr);
     
-    pthread_create(&(tid[0]) ,NULL, calcThread, NULL);
-    pthread_create(&(tid[1]) ,NULL, clientThread, NULL);
-    pthread_create(&(tid[2]) ,NULL, sendThread, NULL);
+    pthread_create(&(tid[0]) ,NULL, calc_thread, NULL);
+    pthread_create(&(tid[1]) ,NULL, client_thread, NULL);
+    pthread_create(&(tid[2]) ,NULL, send_thread, NULL);
 
     while (1) {}
 }
