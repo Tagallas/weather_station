@@ -1,16 +1,16 @@
 #include "opc_ua_server.h"
 
 
-static void update_variable(UA_Server *server) {
+void update_variable(UA_Server *server) {
     static int counter = 0;
-    CustomData data;
-    data.intValue = counter;
-    snprintf(data.stringValue, sizeof(data.stringValue), "Message %d", counter);
+    int intValue = counter;
+    char* stringValue = "";
+    snprintf(stringValue, sizeof(stringValue), "Message %d", counter);
     counter++;
 
     UA_Variant value;
     UA_Variant_init(&value);
-    UA_String uaString = UA_STRING(data.stringValue);
+    UA_String uaString = UA_STRING(stringValue);
     UA_Variant_setScalar(&value, &uaString, &UA_TYPES[UA_TYPES_STRING]);
 
     UA_NodeId nodeId = UA_NODEID_NUMERIC(1, 2101);
@@ -18,7 +18,7 @@ static void update_variable(UA_Server *server) {
 }
 
 
-static void add_object_node(UA_Server *server, char* name, int nodeID, UA_NodeId parent_nodeID) {
+void add_object_node(UA_Server *server, char* name, int nodeID, UA_NodeId parent_nodeID) {
     UA_NodeId myObject;
     UA_ObjectAttributes oAttr = UA_ObjectAttributes_default;
     oAttr.displayName = UA_LOCALIZEDTEXT("en-US", name);
@@ -33,7 +33,7 @@ static void add_object_node(UA_Server *server, char* name, int nodeID, UA_NodeId
 }
 
 
-static void add_string_node(UA_Server *server, char* name, int nodeID, int parent_nodeID){
+void add_string_node(UA_Server *server, char* name, int nodeID, int parent_nodeID){
 
     UA_VariableAttributes attr = UA_VariableAttributes_default;
     attr.displayName = UA_LOCALIZEDTEXT("en-US", name);
@@ -52,7 +52,7 @@ static void add_string_node(UA_Server *server, char* name, int nodeID, int paren
 }
 
 
-static void add_float_array_node(UA_Server *server, char* name, int nodeID, int parent_nodeID) {
+void add_float_array_node(UA_Server *server, char* name, int nodeID, int parent_nodeID) {
 
     float values[73] = {0}; 
     for (int i = 0; i<73; i++){
@@ -123,7 +123,7 @@ void add_int32_node(UA_Server *server, char *name, int nodeID, int parent_nodeID
 }
 
 
-void create_and_start_opc_ua_server(char *server_url, GeoLoc array[]) {
+void create_and_start_opc_ua_server(const char *server_url, GeoLoc array[]) {
     UA_Server *server = UA_Server_new();
     UA_ServerConfig *config = UA_Server_getConfig(server);
   
@@ -136,10 +136,10 @@ void create_and_start_opc_ua_server(char *server_url, GeoLoc array[]) {
     config->applicationDescription.applicationName =
         UA_LOCALIZEDTEXT_ALLOC("en", "Example for Medium");
   
-    UA_NodeId parentNodeId = UA_NODEID_NUMERIC(0, UA_NS0ID(OBJECTSFOLDER));
-    add_object(server, "Weather station", 1001, parentNodeId);
-    add_object(server, "Weather data", 2001, UA_NODEID_NUMERIC(1, 1001));
-    add_object(server, "Average data", 3001, UA_NODEID_NUMERIC(1, 1001));
+    UA_NodeId parentNodeId = UA_NS0ID(OBJECTSFOLDER);
+    add_object_node(server, "Weather station", 1001, parentNodeId);
+    add_object_node(server, "Weather data", 2001, UA_NODEID_NUMERIC(1, 1001));
+    add_object_node(server, "Average data", 3001, UA_NODEID_NUMERIC(1, 1001));
   
     add_weather_object_for_every_section(server, array, 2001);
     add_average_weather_object(server, array, 3001);
@@ -179,7 +179,7 @@ void add_average_weather_object(UA_Server *server, GeoLoc array[], int parent_no
 
 void add_weather_object(UA_Server *server, char *name, int nodeID,
     int parent_nodeID) {
-    add_object(server, name, nodeID, UA_NODEID_NUMERIC(1, parent_nodeID));
+    add_object_node(server, name, nodeID, UA_NODEID_NUMERIC(1, parent_nodeID));
 
     add_string_node(server, "Date", nodeID + 1, nodeID);
     add_double_node(server, "Temperature", nodeID + 2, nodeID);

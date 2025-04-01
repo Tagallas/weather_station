@@ -1,61 +1,105 @@
-#include "opc_ua/opc_ua_client.h"
-#include "global.h"
+#include "client_node.h"
 
+pthread_mutex_t mutex;
+pthread_mutex_t mutex2;
 
-// receive update from string node
-static void dataChangeCallback(UA_Client *client, UA_UInt32 subId, void *subContext,
+UA_String time_table[DATA_ARRAY_SIZE];
+double temperature_table[DATA_ARRAY_SIZE];
+double wind_speed_table[DATA_ARRAY_SIZE];
+int cloudiness[DATA_ARRAY_SIZE];
+
+volatile int time_idx = 0;
+volatile int temperature_idx = 0;
+volatile int wind_speed_idx = 0;
+volatile int cloudiness_idx = 0;
+
+static void dataChangeCallbackTime(UA_Client *client, UA_UInt32 subId, void *subContext,
     UA_UInt32 monId, void *monContext, UA_DataValue *value) {
     if (UA_Variant_hasScalarType(&value->value, &UA_TYPES[UA_TYPES_STRING])) {
-        UA_String *str = (UA_String *)value->value.data;
-        printf("Received update: %.*s\n", (int)str->length, str->data);
-        // TODO: odbierz dane
-        pthread_mutex_unlock(&lock[0]);
 
-        sleep(60);
-        pthread_mutex_lock(&lock[0]);
+        UA_String *str = (UA_String *)value->value.data;
+        printf("Received update from time: %.*s\n", (int)str->length, str->data);
+
+        pthread_mutex_lock(&mutex);
+        
+        time_table[time_idx] = *str;
+        ++time_idx;
+
+        pthread_mutex_unlock(&mutex);
     }
 }
 
+static void dataChangeCallbackTemp(UA_Client *client, UA_UInt32 subId, void *subContext,
+    UA_UInt32 monId, void *monContext, UA_DataValue *value) {
+    if (UA_Variant_hasScalarType(&value->value, &UA_TYPES[UA_TYPES_DOUBLE])) {
 
-static void clientRun() {
-    client = UA_Client_new();
-    UA_ClientConfig_setDefault(UA_Client_getConfig(client));
+        UA_Double data = *(UA_Double *)value->value.data;
+        printf("Received update from temperature: %.2f\n", data);
 
-    UA_StatusCode status = UA_Client_connect(client, "opc.tcp://192.168.192.26:4840");
-    if (status != UA_STATUSCODE_GOOD) {
-        UA_Client_delete(client);
-        printf("Failed to connect to server\n");
-        return;
+        pthread_mutex_lock(&mutex);
+        
+        temperature_table[temperature_idx] = (double)data;
+        ++temperature_idx;
+
+        pthread_mutex_unlock(&mutex);
     }
+}
 
-    /// subscription
-    UA_NodeId nodeId = UA_NODEID_NUMERIC(1, 2201);
-    UA_CreateSubscriptionRequest request = UA_CreateSubscriptionRequest_default();
-    UA_CreateSubscriptionResponse response = UA_Client_Subscriptions_create(client, request, NULL, NULL, NULL);
+static void dataChangeCallbackWind(UA_Client *client, UA_UInt32 subId, void *subContext,
+    UA_UInt32 monId, void *monContext, UA_DataValue *value) {
+    if (UA_Variant_hasScalarType(&value->value, &UA_TYPES[UA_TYPES_DOUBLE])) {
 
-    if (response.responseHeader.serviceResult == UA_STATUSCODE_GOOD) {
-        UA_MonitoredItemCreateRequest monRequest =
-            UA_MonitoredItemCreateRequest_default(nodeId);
-        UA_Client_MonitoredItems_createDataChange(client, response.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH,
-                                                  monRequest, NULL, dataChangeCallback, NULL);
+        UA_Double data = *(UA_Double *)value->value.data;
+        printf("Received update from wind speed: %.2f\n", data);
+
+        pthread_mutex_lock(&mutex);
+        
+        wind_speed_table[wind_speed_idx] = (double)data;
+        ++wind_speed_idx;
+
+        pthread_mutex_unlock(&mutex);
     }
+}
 
-    float tab[73] = {0};
+static void dataChangeCallbackCloud(UA_Client *client, UA_UInt32 subId, void *subContext,
+    UA_UInt32 monId, void *monContext, UA_DataValue *value) {
+    if (UA_Variant_hasScalarType(&value->value, &UA_TYPES[UA_TYPES_INT32])) {
+
+        UA_Int32 data = *(UA_Int32 *)value->value.data;
+        printf("Received update from cloudness: %d\n", data);
+
+        pthread_mutex_lock(&mutex);
+        
+        cloudiness[cloudiness_idx] = (int)data;
+        ++cloudiness_idx;
+
+        pthread_mutex_unlock(&mutex);
+    }
+}
+
+void clientRun() {
+    UA_Client* client = create_and_start_opc_ua_client("opc.tcp://192.168.192.185:4840");
+
+    for (int i = 0; i < DATA_ARRAY_SIZE; i++) {
+        add_subscription(client, nodeIDs[i]+1, dataChangeCallbackTime);
+        add_subscription(client, nodeIDs[i]+2, dataChangeCallbackTemp);
+        add_subscription(client, nodeIDs[i]+3, dataChangeCallbackWind);
+        add_subscription(client, nodeIDs[i]+4, dataChangeCallbackCloud);
+    }
 
     while (true) {
-        //UA_Client_run_iterate(client, 1000);
-        // read_valueString(client);
-        // read_valueArray(client);
-        // writeStringToNode(client, UA_NODEID_NUMERIC(1, 2101), "jeden");
-        // writeArrayToNode(client, UA_NODEID_NUMERIC(1, 2201), tab, 73);
-        sleep(5);
+        UA_Client_run_iterate(client, 10 * 1000);
+
+        // dataChangeCallback(client, 2105, NULL, 0, NULL, NULL);
+        // printf("%.2f\n", wind_speed_table[10]);
+        // sleep(5);
     }
 
     UA_Client_delete(client);
 }
 
- int main(void) {
-     printf("OPC UA Client started...\n");
-     clientRun();
-     return 0;
-}
+//  int main(void) {
+//      printf("OPC UA Client started...\n");
+//      clientRun();
+//      return 0;
+// }

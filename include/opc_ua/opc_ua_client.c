@@ -1,5 +1,6 @@
 #include "opc_ua_client.h"
 
+ReceivedWeatherData data_table[DATA_ARRAY_SIZE];
 
 void browse_node(UA_Client *client, UA_NodeId startNode) {
     printf("Browsing nodes under NodeId %d\n", startNode.identifier.numeric);
@@ -38,14 +39,45 @@ void browse_node(UA_Client *client, UA_NodeId startNode) {
 }
 
 
-void read_value_string(UA_Client *client){
+UA_String read_value_string(UA_Client *client, int node_id){
     UA_Variant value;
     UA_Variant_init(&value);
-    UA_StatusCode status = UA_Client_readValueAttribute(client, UA_NODEID_NUMERIC(1, 2101), &value);
+    UA_StatusCode status = UA_Client_readValueAttribute(client, UA_NODEID_NUMERIC(1, node_id), &value);
     if (status == UA_STATUSCODE_GOOD && UA_Variant_hasScalarType(&value, &UA_TYPES[UA_TYPES_STRING])) {
         printf("Value: %*s\n", *(UA_String*)value.data);
     }
     UA_Variant_clear(&value);
+    return *(UA_String*)value.data;
+}
+
+
+int read_value_int32(UA_Client *client, int node_id) {
+    UA_Variant value;
+    UA_Variant_init(&value);
+    UA_StatusCode status = UA_Client_readValueAttribute(
+        client, UA_NODEID_NUMERIC(1, node_id), &value);
+    if (status == UA_STATUSCODE_GOOD &&
+        UA_Variant_hasScalarType(&value, &UA_TYPES[UA_TYPES_INT32])) {
+      printf("Value: %d\n", *(int *)value.data);
+    }
+    UA_Variant_clear(&value);
+
+    return *(int*)value.data;
+  }
+
+
+double read_value_double(UA_Client *client, int node_id) {
+    UA_Variant value;
+    UA_Variant_init(&value);
+    UA_StatusCode status = UA_Client_readValueAttribute(
+        client, UA_NODEID_NUMERIC(1, node_id), &value);
+    if (status == UA_STATUSCODE_GOOD &&
+        UA_Variant_hasScalarType(&value, &UA_TYPES[UA_TYPES_DOUBLE])) {
+        printf("Value: %f\n", *(double *)value.data);
+    }
+    UA_Variant_clear(&value);
+
+    return *(double *)value.data;
 }
 
 
@@ -65,6 +97,18 @@ void read_value_array(UA_Client *client){
         printf("Couldn't read array value\n");
     }
     UA_Variant_clear(&value);
+}
+
+
+ReceivedWeatherData read_weather_data(UA_Client *client, int node_id){
+    ReceivedWeatherData received_data;
+
+    received_data.time = read_value_string(client, ++node_id);
+    received_data.temperature = read_value_double(client, ++node_id);
+    received_data.wind_speed = read_value_double(client, ++node_id);
+    received_data.cloudiness = read_value_int32(client, ++node_id);
+
+    return received_data;
 }
 
 
@@ -89,7 +133,7 @@ static void handler_data_change(UA_Client *client, UA_UInt32 subId, void *subCon
 }
 
 
-void write_array_to_node(UA_Client *client, UA_NodeId nodeId, float *data, size_t size) {
+void write_to_array_node(UA_Client *client, UA_NodeId nodeId, float *data, size_t size) {
 
     UA_Variant value;
     UA_Variant_init(&value);
@@ -121,6 +165,35 @@ void write_string_to_node(UA_Client *client, UA_NodeId nodeId, const char *text)
     UA_String_clear(&uaString);
 }
 
+
+void add_subscription(UA_Client *client, int node_id, UA_Client_DataChangeNotificationCallback callback) {
+    UA_NodeId nodeId = UA_NODEID_NUMERIC(1, node_id);
+    UA_CreateSubscriptionRequest request = UA_CreateSubscriptionRequest_default();
+    UA_CreateSubscriptionResponse response =
+        UA_Client_Subscriptions_create(client, request, NULL, NULL, NULL);
+  
+    if (response.responseHeader.serviceResult == UA_STATUSCODE_GOOD) {
+      UA_MonitoredItemCreateRequest monRequest =
+          UA_MonitoredItemCreateRequest_default(nodeId);
+      UA_Client_MonitoredItems_createDataChange(
+          client, response.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH, monRequest,
+          NULL, callback, NULL);
+    }
+  }
+
+
+UA_Client *create_and_start_opc_ua_client(char *server_url) {
+  UA_Client *client = UA_Client_new();
+  UA_ClientConfig_setDefault(UA_Client_getConfig(client));
+
+  UA_StatusCode status = UA_Client_connect(client, server_url);
+  if (status != UA_STATUSCODE_GOOD) {
+    UA_Client_delete(client);
+    printf("Failed to connect to server\n");
+    return NULL;
+  }
+  return client;
+}
 
 // w main:
 // UA_CreateSubscriptionRequest request = UA_CreateSubscriptionRequest_default();
