@@ -142,7 +142,7 @@ void create_and_start_opc_ua_server(const char *server_url, GeoLoc array[]) {
     add_object_node(server, "Average data", 3001, UA_NODEID_NUMERIC(1, 1001));
   
     add_weather_object_for_every_section(server, array, 2001);
-    add_average_weather_object(server, array, 3001);
+    add_average_weather_object(server, 3001);
     // TODO: Add nodes for other tasks
   
     printf("OPC UA Server started...\n");
@@ -171,10 +171,12 @@ void add_weather_object_for_every_section(UA_Server *server, GeoLoc array[],
     }
 }
 
-void add_average_weather_object(UA_Server *server, GeoLoc array[], int parent_nodeID){
-    
-    add_weather_object_for_every_section(server, array, parent_nodeID);
+void add_average_weather_object(UA_Server *server, int parent_nodeID){
 
+    add_string_node(server, "Date", parent_nodeID + 1, parent_nodeID);
+    add_double_node(server, "Temperature", parent_nodeID + 2, parent_nodeID);
+    add_double_node(server, "WindSpeed", parent_nodeID + 3, parent_nodeID);
+    add_int32_node(server, "Cloudiness", parent_nodeID + 4, parent_nodeID);
 }
 
 void add_weather_object(UA_Server *server, char *name, int nodeID,

@@ -133,14 +133,15 @@ static void handler_data_change(UA_Client *client, UA_UInt32 subId, void *subCon
 }
 
 
-void write_to_array_node(UA_Client *client, UA_NodeId nodeId, float *data, size_t size) {
+void write_to_array_node(UA_Client *client, int node_id, float *data, size_t size) {
 
     UA_Variant value;
     UA_Variant_init(&value);
     UA_Variant_setArray(&value, data, size, &UA_TYPES[UA_TYPES_FLOAT]);
     
     // send value to server
-    UA_StatusCode status = UA_Client_writeValueAttribute(client, nodeId, &value);
+    UA_StatusCode status = UA_Client_writeValueAttribute(
+        client, UA_NODEID_NUMERIC(1, node_id), &value);
 
     if (status != UA_STATUSCODE_GOOD) {
         printf("Write array error: %s\n", UA_StatusCode_name(status));
@@ -148,7 +149,7 @@ void write_to_array_node(UA_Client *client, UA_NodeId nodeId, float *data, size_
 }
 
 
-void write_string_to_node(UA_Client *client, UA_NodeId nodeId, const char *text) {
+void write_to_string_node(UA_Client *client, int node_id, const char *text) {
     UA_Variant value;
     UA_Variant_init(&value);
 
@@ -156,13 +157,44 @@ void write_string_to_node(UA_Client *client, UA_NodeId nodeId, const char *text)
     UA_Variant_setScalar(&value, &uaString, &UA_TYPES[UA_TYPES_STRING]);
 
     // send value to server
-    UA_StatusCode status = UA_Client_writeValueAttribute(client, nodeId, &value);
+    UA_StatusCode status = UA_Client_writeValueAttribute(
+        client, UA_NODEID_NUMERIC(1, node_id), &value);
 
     if (status != UA_STATUSCODE_GOOD) {
         printf("Write string error: %s\n", UA_StatusCode_name(status));
     }
 
     UA_String_clear(&uaString);
+}
+
+
+void write_to_double_node(UA_Client *client, int node_id, double new_value) {
+    UA_Variant value;
+    UA_Variant_init(&value);
+  
+    UA_Variant_setScalar(&value, &new_value, &UA_TYPES[UA_TYPES_DOUBLE]);
+  
+    UA_StatusCode status = UA_Client_writeValueAttribute(
+        client, UA_NODEID_NUMERIC(1, node_id), &value);
+  
+    if (status != UA_STATUSCODE_GOOD) {
+      printf("Error while saving double: %s\n", UA_StatusCode_name(status));
+    }
+  }
+  
+
+void write_to_int32_node(UA_Client *client, int node_id, int new_value) {
+    UA_Variant value;
+    UA_Variant_init(&value);
+  
+    UA_Variant_setScalar(&value, &new_value, &UA_TYPES[UA_TYPES_INT32]);
+  
+    UA_StatusCode status = UA_Client_writeValueAttribute(
+        client, UA_NODEID_NUMERIC(1, node_id), &value);
+  
+    if (status != UA_STATUSCODE_GOOD) {
+      printf("Error while saving int32: %s\n", UA_StatusCode_name(status));
+    }
 }
 
 

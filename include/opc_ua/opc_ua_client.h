@@ -13,6 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "../global.h"
 
@@ -34,9 +35,10 @@ int read_value_int32(UA_Client *client, int node_id);
 double read_value_double(UA_Client *client, int node_id);
 ReceivedWeatherData read_weather_data(UA_Client *client, int node_id);
 
-void write_to_array_node(UA_Client *client, UA_NodeId nodeId, float *data, size_t size);
-void write_to_string_node(UA_Client *client, UA_NodeId nodeId, const char *text);
-void send_weather_data(UA_Client *client, WeatherData weatherData, int node_id);
+void write_to_array_node(UA_Client *client, int node_id, float *data, size_t size);
+void write_to_string_node(UA_Client *client, int node_id, const char *text);
+void write_to_double_node(UA_Client *client, int node_id, double new_value);
+void write_to_int32_node(UA_Client *client, int node_id, int new_value);
 
 static void handler_data_change(UA_Client *client, UA_UInt32 subId, void *subContext,
     UA_UInt32 monId, void *monContext, UA_DataValue *value);
