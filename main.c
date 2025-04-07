@@ -4,13 +4,15 @@ pthread_t tid[3];
 
 #define DATE_FORMAT "%d/%m/%Y %H:%M"
 
-int compare_dates(UA_String date1, UA_String date2) {
+int compare_dates(char* date1, char* date2) {
     struct tm tm1 = {0}, tm2 = {0};
-    char str_date1[21] = {0};
-    char str_date2[21] = {0};
 
-    snprintf(str_date1, sizeof(str_date1), "%.*s", (int)date1.length, (char*)date1.data);
-    snprintf(str_date2, sizeof(str_date2), "%.*s", (int)date2.length, (char*)date2.data);
+    char str_date1[17];
+    strncpy(str_date1, date1, sizeof(str_date1));
+    str_date1[16] = '\0';  
+    char str_date2[17];
+    strncpy(str_date2, date2, sizeof(str_date2));
+    str_date2[16] = '\0';
 
     strptime(str_date1, DATE_FORMAT, &tm1);
     strptime(str_date2, DATE_FORMAT, &tm2);
@@ -25,10 +27,9 @@ int compare_dates(UA_String date1, UA_String date2) {
 
 
 void* calc_mean(){
-    max_time = UA_STRING("01/01/2000 00:00");
     for (int i = 0; i < DATA_ARRAY_SIZE; i++) {
-        if (compare_dates(time_table[i], max_time) > 0) {
-            max_time = time_table[i];
+        if (compare_dates((time_table[i]), max_time) > 0) {
+            strncpy(max_time, time_table[i], sizeof(max_time));
         }
         temperature_sum += temperature_table[i];
         wind_speed_sum += wind_speed_table[i];
@@ -43,20 +44,19 @@ void* calc_mean(){
 
 void* calc_thread(void *arg) {
     while (1) {
-        printf("lock calcThread\n");
+        // printf("lock calcThread\n");
         pthread_mutex_lock(&mutex2);
 
-        while (time_idx<DATA_ARRAY_SIZE ||  temperature_idx<DATA_ARRAY_SIZE || 
-            wind_speed_idx<DATA_ARRAY_SIZE || cloudiness_idx<DATA_ARRAY_SIZE) {
-            printf("idx: time: %d, temp: %d, wind: %d, cloud: %d\n", time_idx, temperature_idx, wind_speed_idx, cloudiness_idx);
+        while (time_idx<DATA_ARRAY_SIZE) {
             sleep(6); 
         }
 
         pthread_mutex_lock(&mutex);
 
         printf("calcThread\n");
+        // printf("idx: time: %d, temp: %d, wind: %d, cloud: %d\n", time_idx, temperature_idx, wind_speed_idx, cloudiness_idx);
         calc_mean();
-        printf("time: %.*s, temp: %.2f, wind: %.2f, cloud: %d\n", (int)max_time.length, (char*)max_time.data, temperature_sum, wind_speed_sum, cloudiness_sum);
+        printf("time: %s, temp: %.2f, wind: %.2f, cloud: %d\n", max_time, temperature_sum, wind_speed_sum, cloudiness_sum);
         time_idx = 0;
         temperature_idx = 0;
         wind_speed_idx = 0;
@@ -88,7 +88,10 @@ void* send_thread(void *arg){
         temperature_sum = 0;
         wind_speed_sum = 0;
         cloudiness_sum = 0;
-
+        // printf("cleared\n");
+        // printf("idx: time: %d, temp: %d, wind: %d, cloud: %d\n", time_idx, temperature_idx, wind_speed_idx, cloudiness_idx);
+        // printf("time: %s, temp: %.2f, wind: %.2f, cloud: %d\n", max_time, temperature_sum, wind_speed_sum, cloudiness_sum);
+        
         pthread_mutex_unlock(&mutex2);
         sleep(6);
     }

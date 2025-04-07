@@ -207,9 +207,13 @@ void add_subscription(UA_Client *client, int node_id, UA_Client_DataChangeNotifi
     if (response.responseHeader.serviceResult == UA_STATUSCODE_GOOD) {
       UA_MonitoredItemCreateRequest monRequest =
           UA_MonitoredItemCreateRequest_default(nodeId);
+
+        int *context_id = (int *)malloc(sizeof(int));
+        *context_id = node_id;
+
       UA_Client_MonitoredItems_createDataChange(
           client, response.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH, monRequest,
-          NULL, callback, NULL);
+          context_id, callback, NULL);
     }
   }
 
