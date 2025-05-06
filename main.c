@@ -106,7 +106,6 @@ int main(){
 
     pthread_create(&(tid[0]) ,NULL, calc_thread, NULL);
     pthread_create(&(tid[1]) ,NULL, client_thread, NULL);
-    sleep(1);
     pthread_create(&(tid[2]) ,NULL, send_thread, NULL);
 
     while (1) {}
